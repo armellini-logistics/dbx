@@ -63,9 +63,21 @@ async fn main() {
     let google_client_id = std::env::var("GOOGLE_CLIENT_ID").ok();
     let google_client_secret = std::env::var("GOOGLE_CLIENT_SECRET").ok();
     let google_redirect_uri = std::env::var("GOOGLE_REDIRECT_URI").ok();
-    let oauth_config = if let (Some(client_id), Some(client_secret), Some(redirect_uri)) = (google_client_id, google_client_secret, google_redirect_uri) {
-        Some(state::OAuthConfig { client_id, client_secret, redirect_uri })
+    let oauth_config = if let (Some(client_id), Some(client_secret), Some(redirect_uri)) = (&google_client_id, &google_client_secret, &google_redirect_uri) {
+        tracing::info!("Google OAuth 2.0 initialized successfully. Redirect URI: {}", redirect_uri);
+        Some(state::OAuthConfig {
+            client_id: client_id.clone(),
+            client_secret: client_secret.clone(),
+            redirect_uri: redirect_uri.clone(),
+        })
     } else {
+        let mut missing = Vec::new();
+        if google_client_id.is_none() { missing.push("GOOGLE_CLIENT_ID"); }
+        if google_client_secret.is_none() { missing.push("GOOGLE_CLIENT_SECRET"); }
+        if google_redirect_uri.is_none() { missing.push("GOOGLE_REDIRECT_URI"); }
+        if !missing.is_empty() {
+            tracing::warn!("Google OAuth 2.0 is disabled. Missing environment variables: {:?}", missing);
+        }
         None
     };
 
