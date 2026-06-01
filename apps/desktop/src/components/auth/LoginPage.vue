@@ -139,7 +139,10 @@ async function submit() {
         </Button>
       </form>
 
-      <p class="text-center text-xs text-muted-foreground/50">Powered by DBX</p>
+      <div class="text-center space-y-1 select-none">
+        <p class="text-xs text-muted-foreground/50">Powered by DBX</p>
+        <p class="text-[10px] text-muted-foreground/45 font-mono">Version 2.5.6 (Updated: 06/01/2026 04:15pm)</p>
+      </div>
     </div>
   </div>
 </template>

@@ -94,7 +94,7 @@ pub async fn login(State(state): State<Arc<WebState>>, Json(body): Json<LoginReq
     };
     state.sessions.write().await.insert(token.clone(), session_info);
 
-    let cookie = format!("dbx_session={token}; Path=/; HttpOnly; SameSite=Lax");
+    let cookie = format!("dbx_session={token}; Path=/; HttpOnly; SameSite=Lax; Secure");
     Ok((StatusCode::OK, [("set-cookie", cookie.as_str())], Json(serde_json::json!({"ok": true}))).into_response())
 }
 
@@ -129,7 +129,7 @@ pub async fn setup(State(state): State<Arc<WebState>>, Json(body): Json<LoginReq
     };
     state.sessions.write().await.insert(token.clone(), session_info);
 
-    let cookie = format!("dbx_session={token}; Path=/; HttpOnly; SameSite=Lax");
+    let cookie = format!("dbx_session={token}; Path=/; HttpOnly; SameSite=Lax; Secure");
     Ok((StatusCode::OK, [("set-cookie", cookie.as_str())], Json(serde_json::json!({"ok": true}))).into_response())
 }
 
@@ -222,7 +222,7 @@ pub async fn logout(State(state): State<Arc<WebState>>, req: Request<axum::body:
     if let Some(token) = extract_session_token(&req) {
         state.sessions.write().await.remove(&token);
     }
-    let cookie = "dbx_session=; Path=/; HttpOnly; Max-Age=0";
+    let cookie = "dbx_session=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0";
     (StatusCode::OK, [("set-cookie", cookie)], Json(serde_json::json!({"ok": true}))).into_response()
 }
 
@@ -243,7 +243,7 @@ pub async fn google_login(State(state): State<Arc<WebState>>) -> Result<Response
         oauth.redirect_uri,
         csrf_state
     );
-    let cookie = format!("dbx_oauth_state={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=300", csrf_state);
+    let cookie = format!("dbx_oauth_state={}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=300", csrf_state);
     Ok((
         StatusCode::FOUND,
         [("location", auth_url.as_str()), ("set-cookie", cookie.as_str())],
@@ -317,8 +317,8 @@ pub async fn google_callback(
 
     state.sessions.write().await.insert(token.clone(), session_info);
 
-    let cookie = format!("dbx_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000");
-    let state_cookie = "dbx_oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
+    let cookie = format!("dbx_session={token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000");
+    let state_cookie = "dbx_oauth_state=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0";
 
     Ok((
         StatusCode::FOUND,
