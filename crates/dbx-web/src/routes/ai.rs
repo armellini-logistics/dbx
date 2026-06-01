@@ -66,12 +66,12 @@ pub async fn save_ai_config(
     State(state): State<Arc<WebState>>,
     Json(body): Json<SaveAiConfigRequest>,
 ) -> Result<Json<()>, AppError> {
-    state.app.storage.save_ai_config(&body.config).await.map_err(AppError)?;
+    state.app().storage.save_ai_config(&body.config).await.map_err(AppError)?;
     Ok(Json(()))
 }
 
 pub async fn load_ai_config(State(state): State<Arc<WebState>>) -> Result<Json<Option<AiConfig>>, AppError> {
-    let config = state.app.storage.load_ai_config().await.map_err(AppError)?;
+    let config = state.app().storage.load_ai_config().await.map_err(AppError)?;
     Ok(Json(config))
 }
 
@@ -83,12 +83,12 @@ pub async fn save_ai_conversation(
     State(state): State<Arc<WebState>>,
     Json(body): Json<SaveAiConversationRequest>,
 ) -> Result<Json<()>, AppError> {
-    state.app.storage.save_ai_conversation(&body.conversation).await.map_err(AppError)?;
+    state.app().storage.save_ai_conversation(&body.conversation).await.map_err(AppError)?;
     Ok(Json(()))
 }
 
 pub async fn load_ai_conversations(State(state): State<Arc<WebState>>) -> Result<Json<Vec<AiConversation>>, AppError> {
-    let conversations = state.app.storage.load_ai_conversations().await.map_err(AppError)?;
+    let conversations = state.app().storage.load_ai_conversations().await.map_err(AppError)?;
     Ok(Json(conversations))
 }
 
@@ -96,7 +96,7 @@ pub async fn delete_ai_conversation(
     State(state): State<Arc<WebState>>,
     Path(id): Path<String>,
 ) -> Result<Json<()>, AppError> {
-    state.app.storage.delete_ai_conversation(&id).await.map_err(AppError)?;
+    state.app().storage.delete_ai_conversation(&id).await.map_err(AppError)?;
     Ok(Json(()))
 }
 

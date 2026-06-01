@@ -77,7 +77,7 @@ pub async fn execute_sql_file(
     let (tx, _) = tokio::sync::broadcast::channel::<String>(256);
     state.sse_channels.write().await.insert(execution_id.clone(), tx.clone());
 
-    let app = state.app.clone();
+    let app = state.app().clone();
     let state_clone = state.clone();
 
     tokio::spawn(async move {

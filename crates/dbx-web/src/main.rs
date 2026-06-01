@@ -59,14 +59,26 @@ async fn main() {
         app_state.storage.load_password_hash().await.unwrap_or(None)
     };
 
+    // Google OAuth config
+    let google_client_id = std::env::var("GOOGLE_CLIENT_ID").ok();
+    let google_client_secret = std::env::var("GOOGLE_CLIENT_SECRET").ok();
+    let google_redirect_uri = std::env::var("GOOGLE_REDIRECT_URI").ok();
+    let oauth_config = if let (Some(client_id), Some(client_secret), Some(redirect_uri)) = (google_client_id, google_client_secret, google_redirect_uri) {
+        Some(state::OAuthConfig { client_id, client_secret, redirect_uri })
+    } else {
+        None
+    };
+
     let web_state = Arc::new(WebState {
-        app: app_state,
+        default_app: app_state,
+        user_apps: RwLock::new(HashMap::new()),
         data_dir,
         password_hash: RwLock::new(password_hash),
-        sessions: RwLock::new(HashSet::new()),
+        sessions: RwLock::new(HashMap::new()),
         sse_channels: RwLock::new(HashMap::new()),
         sql_file_executions: RwLock::new(HashMap::new()),
         login_rate_limit: tokio::sync::Mutex::new(state::LoginRateLimit { fail_count: 0, locked_until: None }),
+        oauth_config,
     });
 
     // CORS
@@ -80,6 +92,8 @@ async fn main() {
         .route("/auth/setup", post(auth::setup))
         .route("/auth/change-password", post(auth::change_password))
         .route("/auth/logout", post(auth::logout))
+        .route("/auth/google/login", get(auth::google_login))
+        .route("/auth/google/callback", get(auth::google_callback))
         // Connection
         .route("/connection/test", post(routes::connection::test_connection))
         .route("/connection/connect", post(routes::connection::connect_db))

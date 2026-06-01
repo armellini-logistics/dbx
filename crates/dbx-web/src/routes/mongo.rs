@@ -105,7 +105,7 @@ pub async fn list_databases(
     Json(req): Json<MongoConnectionRequest>,
 ) -> Result<Json<Vec<String>>, AppError> {
     let result =
-        dbx_core::mongo_ops::mongo_list_databases_core(&state.app, &req.connection_id).await.map_err(AppError)?;
+        dbx_core::mongo_ops::mongo_list_databases_core(&state.app(), &req.connection_id).await.map_err(AppError)?;
     Ok(Json(result))
 }
 
@@ -113,7 +113,7 @@ pub async fn list_collections(
     State(state): State<Arc<WebState>>,
     Json(req): Json<MongoCollectionRequest>,
 ) -> Result<Json<Vec<String>>, AppError> {
-    let result = dbx_core::mongo_ops::mongo_list_collections_core(&state.app, &req.connection_id, &req.database)
+    let result = dbx_core::mongo_ops::mongo_list_collections_core(&state.app(), &req.connection_id, &req.database)
         .await
         .map_err(AppError)?;
     Ok(Json(result))
@@ -124,7 +124,7 @@ pub async fn find_documents(
     Json(req): Json<MongoFindRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let result = dbx_core::mongo_ops::mongo_find_documents_core(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.collection,
@@ -143,7 +143,7 @@ pub async fn aggregate_documents(
     Json(req): Json<MongoAggregateRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let result = dbx_core::mongo_ops::mongo_aggregate_documents_core(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.collection,
@@ -160,7 +160,7 @@ pub async fn insert_document(
     Json(req): Json<MongoInsertRequest>,
 ) -> Result<Json<String>, AppError> {
     let result = dbx_core::mongo_ops::mongo_insert_document_core(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.collection,
@@ -176,7 +176,7 @@ pub async fn insert_documents(
     Json(req): Json<MongoInsertDocumentsRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let result = dbx_core::mongo_ops::mongo_insert_documents_core(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.collection,
@@ -192,7 +192,7 @@ pub async fn update_document(
     Json(req): Json<MongoUpdateRequest>,
 ) -> Result<Json<u64>, AppError> {
     let result = dbx_core::mongo_ops::mongo_update_document_core(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.collection,
@@ -209,7 +209,7 @@ pub async fn update_documents(
     Json(req): Json<MongoUpdateDocumentsRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let result = dbx_core::mongo_ops::mongo_update_documents_core(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.collection,
@@ -227,7 +227,7 @@ pub async fn delete_document(
     Json(req): Json<MongoDeleteRequest>,
 ) -> Result<Json<u64>, AppError> {
     let result = dbx_core::mongo_ops::mongo_delete_document_core(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.collection,
@@ -243,7 +243,7 @@ pub async fn delete_documents(
     Json(req): Json<MongoDeleteDocumentsRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let result = dbx_core::mongo_ops::mongo_delete_documents_core(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.collection,

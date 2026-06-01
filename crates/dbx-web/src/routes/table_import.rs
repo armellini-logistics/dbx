@@ -61,7 +61,7 @@ pub async fn execute_import(
     let (tx, _) = tokio::sync::broadcast::channel::<String>(256);
     state.sse_channels.write().await.insert(import_id.clone(), tx.clone());
 
-    let app = state.app.clone();
+    let app = state.app().clone();
     let state_clone = state.clone();
 
     tokio::spawn(async move {

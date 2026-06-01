@@ -33,7 +33,7 @@ pub async fn start_transfer(
     let (tx, _) = tokio::sync::broadcast::channel::<String>(256);
     state.sse_channels.write().await.insert(transfer_id.clone(), tx.clone());
 
-    let app = state.app.clone();
+    let app = state.app().clone();
     let state_clone = state.clone();
 
     tokio::spawn(async move {

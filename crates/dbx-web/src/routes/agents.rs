@@ -39,16 +39,16 @@ pub struct JavaRuntimeRequest {
 pub async fn list_installed_agents_local(
     State(state): State<Arc<WebState>>,
 ) -> Result<Json<Vec<AgentDriverInfo>>, AppError> {
-    Ok(Json(build_agent_list(&state.app.agent_manager, None)))
+    Ok(Json(build_agent_list(&state.app().agent_manager, None)))
 }
 
 pub async fn list_installed_agents(State(state): State<Arc<WebState>>) -> Result<Json<Vec<AgentDriverInfo>>, AppError> {
     let registry = fetch_registry().await.ok();
-    Ok(Json(build_agent_list(&state.app.agent_manager, registry.as_ref())))
+    Ok(Json(build_agent_list(&state.app().agent_manager, registry.as_ref())))
 }
 
 pub async fn get_driver_store_usage(State(state): State<Arc<WebState>>) -> Result<Json<DriverStoreUsage>, AppError> {
-    Ok(Json(state.app.agent_manager.collect_driver_store_usage(state.app.plugins.root_dir())))
+    Ok(Json(state.app().agent_manager.collect_driver_store_usage(state.app().plugins.root_dir())))
 }
 
 pub async fn install_agent(
@@ -56,7 +56,7 @@ pub async fn install_agent(
     Json(req): Json<AgentTypeRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let tx = progress_sender(&state, "global").await;
-    install_agent_driver(&state.app.agent_manager, &req.db_type, |event| send_progress_event(&tx, event))
+    install_agent_driver(&state.app().agent_manager, &req.db_type, |event| send_progress_event(&tx, event))
         .await
         .map_err(AppError)?;
     Ok(Json(serde_json::json!({ "ok": true })))
@@ -64,7 +64,7 @@ pub async fn install_agent(
 
 pub async fn upgrade_all_agents(State(state): State<Arc<WebState>>) -> Result<Json<serde_json::Value>, AppError> {
     let tx = progress_sender(&state, "global").await;
-    let total = upgrade_all_agent_drivers(&state.app.agent_manager, |event| send_progress_event(&tx, event))
+    let total = upgrade_all_agent_drivers(&state.app().agent_manager, |event| send_progress_event(&tx, event))
         .await
         .map_err(AppError)?;
     Ok(Json(serde_json::json!({ "count": total })))
@@ -74,21 +74,21 @@ pub async fn uninstall_agent(
     State(state): State<Arc<WebState>>,
     Json(req): Json<AgentTypeRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    uninstall_agent_driver(&state.app.agent_manager, &req.db_type).await.map_err(AppError)?;
+    uninstall_agent_driver(&state.app().agent_manager, &req.db_type).await.map_err(AppError)?;
     Ok(Json(serde_json::json!({ "ok": true })))
 }
 
 pub async fn get_agent_java_runtime_config(
     State(state): State<Arc<WebState>>,
 ) -> Result<Json<JavaRuntimeConfig>, AppError> {
-    Ok(Json(state.app.agent_manager.load_state().java_runtime))
+    Ok(Json(state.app().agent_manager.load_state().java_runtime))
 }
 
 pub async fn set_agent_java_runtime_config(
     State(state): State<Arc<WebState>>,
     Json(req): Json<JavaRuntimeRequest>,
 ) -> Result<Json<JavaRuntimeConfig>, AppError> {
-    let am = &state.app.agent_manager;
+    let am = &state.app().agent_manager;
     let mut config = req.config;
     if config.mode == JavaRuntimeMode::Custom || config.mode == JavaRuntimeMode::System {
         let candidate_state = AgentState { java_runtime: config.clone(), ..am.load_state() };
@@ -132,7 +132,7 @@ pub async fn import_agents_from_zip(
 
         let tx = progress_sender(&state, "global").await;
         let result =
-            import_agents_from_zip_core(&state.app.agent_manager, &zip_path, |event| send_progress_event(&tx, event))
+            import_agents_from_zip_core(&state.app().agent_manager, &zip_path, |event| send_progress_event(&tx, event))
                 .map_err(AppError);
         let _ = std::fs::remove_file(&zip_path);
 
@@ -168,12 +168,12 @@ pub async fn import_agent_jar(
     let db_type = db_type.ok_or_else(|| AppError("Missing dbType field".to_string()))?;
     let data = jar_data.ok_or_else(|| AppError("No file uploaded".to_string()))?;
 
-    let temp_dir = state.app.plugins.root_dir().join("jar_upload_tmp");
+    let temp_dir = state.app().plugins.root_dir().join("jar_upload_tmp");
     std::fs::create_dir_all(&temp_dir).map_err(|e| AppError(e.to_string()))?;
     let tmp_path = temp_dir.join(&jar_name);
     std::fs::write(&tmp_path, &data).map_err(|e| AppError(e.to_string()))?;
 
-    dbx_core::agent_service::import_agent_jar(&state.app.agent_manager, &db_type, &tmp_path).map_err(AppError::from)?;
+    dbx_core::agent_service::import_agent_jar(&state.app().agent_manager, &db_type, &tmp_path).map_err(AppError::from)?;
     let _ = std::fs::remove_file(&tmp_path);
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -183,7 +183,7 @@ pub async fn reinstall_jre(
     Json(req): Json<JreRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let tx = progress_sender(&state, "global").await;
-    reinstall_agent_jre(&state.app.agent_manager, req.jre_key.as_deref().unwrap_or(DEFAULT_JRE_KEY), |event| {
+    reinstall_agent_jre(&state.app().agent_manager, req.jre_key.as_deref().unwrap_or(DEFAULT_JRE_KEY), |event| {
         send_progress_event(&tx, event);
     })
     .await
@@ -196,7 +196,7 @@ pub async fn uninstall_jre(
     Json(req): Json<JreRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let key = req.jre_key.as_deref().unwrap_or(DEFAULT_JRE_KEY);
-    uninstall_agent_jre(&state.app.agent_manager, key).await.map_err(AppError)?;
+    uninstall_agent_jre(&state.app().agent_manager, key).await.map_err(AppError)?;
     Ok(Json(serde_json::json!({ "ok": true })))
 }
 

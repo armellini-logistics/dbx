@@ -262,11 +262,11 @@ pub async fn execute_query(
 ) -> Result<Json<serde_json::Value>, AppError> {
     let execution_id = req.execution_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
-    let registered = state.app.running_queries.register(execution_id);
+    let registered = state.app().running_queries.register(execution_id);
     let cancel_token = registered.token();
 
     let result = dbx_core::query::execute_sql_statement_with_options(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.sql,
@@ -294,11 +294,11 @@ pub async fn execute_multi(
 ) -> Result<Json<serde_json::Value>, AppError> {
     let execution_id = req.execution_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
-    let registered = state.app.running_queries.register(execution_id);
+    let registered = state.app().running_queries.register(execution_id);
     let cancel_token = registered.token();
 
     let result = dbx_core::query::execute_multi_core_with_options(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.sql,
@@ -325,7 +325,7 @@ pub async fn execute_batch(
     Json(req): Json<ExecuteBatchRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let result = dbx_core::query::execute_statements(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.statements,
@@ -341,7 +341,7 @@ pub async fn cancel_query(
     State(state): State<Arc<WebState>>,
     Json(req): Json<CancelRequest>,
 ) -> Json<serde_json::Value> {
-    let cancelled = state.app.running_queries.cancel(&req.execution_id);
+    let cancelled = state.app().running_queries.cancel(&req.execution_id);
     Json(serde_json::json!({ "cancelled": cancelled }))
 }
 
@@ -350,7 +350,7 @@ pub async fn close_query_session(
     Json(req): Json<CloseSessionRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let closed = dbx_core::query::close_query_session(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.session_id,
@@ -381,14 +381,14 @@ pub async fn execute_script(
     Json(req): Json<ExecuteQueryRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let db_type = {
-        let configs = state.app.configs.read().await;
+        let configs = state.app().configs.read().await;
         configs.get(&req.connection_id).map(|config| config.db_type)
     };
     let statements = db_type
         .map(|db_type| dbx_core::sql::split_sql_statements_for_database(&req.sql, db_type))
         .unwrap_or_else(|| dbx_core::sql::split_sql_statements(&req.sql));
     let result = dbx_core::query::execute_statements(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &statements,
@@ -405,7 +405,7 @@ pub async fn execute_in_transaction(
     Json(req): Json<ExecuteBatchRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let result = dbx_core::query::execute_statements_in_transaction(
-        &state.app,
+        &state.app(),
         &req.connection_id,
         &req.database,
         &req.statements,
