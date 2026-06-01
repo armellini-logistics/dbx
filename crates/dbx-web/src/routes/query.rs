@@ -368,7 +368,7 @@ pub async fn close_client_connection_session(
 ) -> Result<Json<serde_json::Value>, AppError> {
     let database = if req.database.trim().is_empty() { None } else { Some(req.database.as_str()) };
     let closed = state
-        .app
+        .app()
         .close_client_session_pool(&req.connection_id, database, &req.client_session_id)
         .await
         .map_err(AppError)?;
@@ -381,7 +381,8 @@ pub async fn execute_script(
     Json(req): Json<ExecuteQueryRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let db_type = {
-        let configs = state.app().configs.read().await;
+        let app = state.app();
+        let configs = app.configs.read().await;
         configs.get(&req.connection_id).map(|config| config.db_type)
     };
     let statements = db_type

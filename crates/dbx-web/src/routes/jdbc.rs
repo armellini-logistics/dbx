@@ -10,7 +10,8 @@ use crate::state::WebState;
 // ---- JDBC Drivers ----
 
 pub async fn list_jdbc_drivers(State(state): State<Arc<WebState>>) -> Result<Json<Vec<JdbcDriverInfo>>, AppError> {
-    let root = state.app().plugins.root_dir();
+    let app = state.app();
+    let root = app.plugins.root_dir();
     Ok(Json(jdbc::list_jdbc_drivers(&root).map_err(AppError::internal)?))
 }
 
@@ -18,7 +19,8 @@ pub async fn import_jdbc_drivers(
     State(state): State<Arc<WebState>>,
     mut multipart: Multipart,
 ) -> Result<Json<Vec<JdbcDriverInfo>>, AppError> {
-    let root = state.app().plugins.root_dir();
+    let app = state.app();
+    let root = app.plugins.root_dir();
     let drivers_dir = root.join("jdbc").join("drivers");
     std::fs::create_dir_all(&drivers_dir).map_err(|e| AppError::internal(e.to_string()))?;
 
@@ -44,7 +46,8 @@ pub async fn delete_jdbc_driver(
     if name.contains("..") || name.contains('/') || name.contains('\\') {
         return Err(AppError::bad_request("Invalid driver name"));
     }
-    let root = state.app().plugins.root_dir();
+    let app = state.app();
+    let root = app.plugins.root_dir();
     let driver_path = root.join("jdbc").join("drivers").join(&name);
     let path_str = driver_path.to_string_lossy().to_string();
     Ok(Json(jdbc::delete_jdbc_driver(&root, &path_str).map_err(AppError::internal)?))
@@ -53,12 +56,14 @@ pub async fn delete_jdbc_driver(
 // ---- JDBC Plugin ----
 
 pub async fn get_jdbc_plugin_status(State(state): State<Arc<WebState>>) -> Result<Json<JdbcPluginStatus>, AppError> {
-    let root = state.app().plugins.root_dir();
+    let app = state.app();
+    let root = app.plugins.root_dir();
     Ok(Json(jdbc::get_jdbc_plugin_status(&root).await.map_err(AppError::internal)?))
 }
 
 pub async fn install_jdbc_plugin(State(state): State<Arc<WebState>>) -> Result<Json<JdbcPluginStatus>, AppError> {
-    let root = state.app().plugins.root_dir();
+    let app = state.app();
+    let root = app.plugins.root_dir();
     Ok(Json(jdbc::install_jdbc_plugin(&root).await.map_err(AppError::internal)?))
 }
 
@@ -66,7 +71,8 @@ pub async fn install_jdbc_plugin_local(
     State(state): State<Arc<WebState>>,
     mut multipart: Multipart,
 ) -> Result<Json<JdbcPluginStatus>, AppError> {
-    let root = state.app().plugins.root_dir();
+    let app = state.app();
+    let root = app.plugins.root_dir();
     let temp_dir = root.join("jdbc").with_extension("upload_tmp");
     std::fs::create_dir_all(&temp_dir).map_err(|e| AppError::internal(e.to_string()))?;
 
@@ -89,7 +95,8 @@ pub async fn install_jdbc_plugin_local(
 }
 
 pub async fn uninstall_jdbc_plugin(State(state): State<Arc<WebState>>) -> Result<Json<JdbcPluginStatus>, AppError> {
-    let root = state.app().plugins.root_dir();
+    let app = state.app();
+    let root = app.plugins.root_dir();
     Ok(Json(jdbc::uninstall_jdbc_plugin(&root).map_err(AppError::internal)?))
 }
 
